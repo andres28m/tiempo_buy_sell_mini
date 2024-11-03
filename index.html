@@ -37,7 +37,7 @@
             margin: 20px 0;
         }
 
-        #selectionContainer, #priceInfo {
+        #priceInfo {
             width: 90%;
             max-width: 390px;
             margin: 10px auto;
@@ -123,7 +123,9 @@
 <body>
 <div class="Container">
 <div class="dos">
-    <div id="selectionContainer">
+    
+    
+        
     <select id="cryptoSelect">
         <option value="bitcoin">Bitcoin</option>
         <option value="ethereum">Ethereum</option>
@@ -140,14 +142,18 @@
         <option value="dogecoin">Dogecoin</option>
         <option value="shiba-inu">Shiba Inu</option>
     </select>
+        
     <button onclick="fetchData()">Analizar</button>
-</div>
+        
+    
+    
 </div>
     
 <div id="priceInfo"></div>
 <div id="chartContainer">
     <canvas id="volumeChart"></canvas>
 </div>
+    
 </div>
 <script>
     let currentChart = null; // Variable para almacenar el gráfico actual
