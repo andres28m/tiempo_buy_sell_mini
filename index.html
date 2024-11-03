@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiempo d BUY Y SELL</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;500&display=swap');
+        
+        /* Estilos generales */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #E0E0E0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .Container {
+            width: 100%;
+            max-width: 380px;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #1E1E1E;
+            border-radius: 12px;
+            box-shadow: 0px 0px 20px rgba(0, 229, 255, 0.2);
+        }
+
+        h1 {
+            color: #00E5FF;
+            text-shadow: 0px 0px 8px rgba(0, 229, 255, 0.8);
+            font-size: 1.8em;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #selectionContainer, #priceInfo {
+            width: 90%;
+            max-width: 390px;
+            margin: 10px auto;
+            text-align: center;
+        }
+
+        select {
+            width: 100%;
+            max-width: 380px;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            border: none;
+            transition: 0.3s;
+        }
+
+        select {
+            background-color: #1E1E1E;
+            color: #E0E0E0;
+        }
+
+        button {
+            width: 100%;
+            max-width: 380px;
+            height: 40px;
+            padding: 2px;
+            background: linear-gradient(45deg, #09ffcf, #0e72ec);
+            color: #0a0f1e;
+            font-size: 18px;
+            font-family: 'Orbitron', sans-serif;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            align-items: center;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #0e72ec, #09ffcf);
+            box-shadow: 0px 0px 15px rgba(9, 255, 255, 0.9);
+        }
+
+        #priceInfo h2 {
+            font-size: 1.5em;
+            color: #00E5FF;
+        }
+
+        #priceInfo p {
+            font-size: 1em;
+            margin: 8px 0;
+        }
+
+        #chartContainer {
+            width: 100%;
+            max-width: 360px;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #1E1E1E;
+            border-radius: 12px;
+            box-shadow: 0px 0px 20px rgba(0, 229, 255, 0.2);
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+<div class="Container">
+<h1>Tiempo de BUY Y SELL</h1>
+<div id="selectionContainer">
+    <select id="cryptoSelect">
+        <option value="bitcoin">Bitcoin</option>
+        <option value="ethereum">Ethereum</option>
+        <option value="binancecoin">Binance Coin</option>
+        <option value="ark">Ark</option>
+        <option value="solana">Solana</option>
+        <option value="super">Super</option>
+        <option value="aave">Aave</option>
+        <option value="fantom">Fantom</option>
+        <option value="maker">Maker</option>
+        <option value="toncoin">Toncoin</option>
+        <option value="litecoin">Litecoin</option>
+        <option value="tron">Tron</option>
+        <option value="dogecoin">Dogecoin</option>
+        <option value="shiba-inu">Shiba Inu</option>
+    </select>
+    <button onclick="fetchData()">Mostrar datos</button>
+</div>
+
+<div id="priceInfo"></div>
+<div id="chartContainer">
+    <canvas id="volumeChart"></canvas>
+</div>
+</div>
+<script>
+    let currentChart = null; // Variable para almacenar el gráfico actual
+
+    function convertSymbolBinance(symbol) {
+        const symbolMap = {
+            'bitcoin': 'BTCUSDT',
+            'ethereum': 'ETHUSDT',
+            'binancecoin': 'BNBUSDT',
+            'ark': 'ARKUSDT',
+            'solana': 'SOLUSDT',
+            'super': 'SUPERUSDT',
+            'aave': 'AAVEUSDT',
+            'fantom': 'FTMUSDT',
+            'maker': 'MKRUSDT',
+            'toncoin': 'TONUSDT',
+            'litecoin': 'LTCUSDT',
+            'tron': 'TRXUSDT',
+            'dogecoin': 'DOGEUSDT',
+            'shiba-inu': 'SHIBUSDT'
+        };
+        return symbolMap[symbol] || symbol.toUpperCase() + 'USDT';
+    }
+
+    async function fetchDataFromBinance(symbol) {
+        const symbolBinance = convertSymbolBinance(symbol);
+        const url = `https://api.binance.com/api/v3/klines?symbol=${symbolBinance}&interval=1h&limit=24`;
+        
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Error al obtener los datos de Binance");
+            const data = await response.json();
+
+            const prices = data.map(candle => parseFloat(candle[4]));
+            const volumes = data.map(candle => parseFloat(candle[5]));
+
+            return { prices, volumes };
+        } catch (error) {
+            console.error("Error en fetchDataFromBinance:", error);
+            throw error;
+        }
+    }
+
+    function generateTimeLabels() {
+        const labels = [];
+        const now = new Date();
+
+        for (let i = 23; i >= 0; i--) {
+            const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+            labels.push(`${time.getHours()}:00`);
+        }
+        return labels;
+    }
+
+    async function fetchData() {
+        const selectedCrypto = document.getElementById("cryptoSelect").value;
+        
+        // Restablecer el contenedor de información de precios
+        document.getElementById("priceInfo").innerHTML = "";
+        
+        // Destruir el gráfico actual si existe
+        if (currentChart) {
+            currentChart.destroy();
+        }
+
+        try {
+            const binanceData = await fetchDataFromBinance(selectedCrypto);
+            const binancePrice = binanceData.prices[binanceData.prices.length - 1];
+
+            // Mostrar la nueva información de precios
+            document.getElementById("priceInfo").innerHTML = `
+                <h2>${selectedCrypto.toUpperCase()}</h2>
+                <p>Precio en Binance: ${binancePrice} USDT</p>
+            `;
+
+            const buySellColors = binanceData.prices.map((price, i, arr) => {
+                if (i === 0) return 'gray';
+                return price > arr[i - 1] ? 'green' : 'red';
+            });
+
+            // Crear un nuevo gráfico con los datos actualizados
+            const ctx = document.getElementById('volumeChart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(),
+                    datasets: [{
+                        label: 'Precio',
+                        data: binanceData.prices,
+                        borderColor: '#00E5FF',
+                        backgroundColor: 'transparent',
+                        pointBackgroundColor: buySellColors,
+                        pointRadius: 5,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Hora', color: '#E0E0E0' } },
+                        y: { title: { display: true, text: 'Precio', color: '#E0E0E0' } }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#E0E0E0'
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Error en fetchData:", error);
+            alert("Error al obtener los datos. Por favor, intenta más tarde.");
+        }
+    }
+</script>
+
+</body>
+</html>
